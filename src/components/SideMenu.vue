@@ -104,16 +104,13 @@ export default {
            this.openProfile(payload);
         });
         
-        document.addEventListener("click", e => {
-            if (this.isUserOpenned && !e.target.closest('.wrapper-table')) {
-                this.closeProfile();
-            }
-        });
+        document.addEventListener("click", this.outerClickListener);
 
         this.makeChart();
     },
     beforeDestroy() {
         eventBus.$off('select-employer');
+        document.removeEventListener("click", this.outerClickListener);
     },
     methods: {
         openProfile(id) {
@@ -143,6 +140,11 @@ export default {
             };
 
             this.$refs.chart.renderChart(chartData, chartOptions);
+        },
+        outerClickListener(event) {
+            if (this.isUserOpenned && !event.target.closest('.wrapper-table')) {
+                this.closeProfile();
+            }
         }
     },
 };

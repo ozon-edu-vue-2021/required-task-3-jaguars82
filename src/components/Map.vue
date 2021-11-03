@@ -11,7 +11,7 @@
             <TableSVG v-show="false" ref="table" />
 
         </div>
-        <div v-else>Loading...</div>
+        <Loader v-else />
     </div>
 </template>
 
@@ -20,17 +20,19 @@ import eventBus from '@/eventBus.js';
 import * as d3 from 'd3';
 import MapSVG from '@/assets/images/map.svg';
 import TableSVG from '@/assets/images/workPlace.svg';
+import Loader from './Loader.vue';
 import tables from '@/assets/data/tables.json';
 import legend from '@/assets/data/legend.json';
 
 export default {
     components: {
         MapSVG,
-        TableSVG
+        TableSVG,
+        Loader
     },
     data() {
         return {
-            isLoading: false,
+            isLoading: true,
             svg: null,
             svgGroup: null,
             tables: tables,
@@ -61,15 +63,26 @@ export default {
         },
     },
     mounted () {
-        this.svg = d3.select(this.$refs.svg);
-        this.svgGroup = this.svg.select("g");
-        this.tableSVG = d3.select(this.$refs.table);
+        let loadMap = new Promise((resolve) => {
+            setTimeout(() => { 
+                this.isLoading = false;
+                resolve("Map is Loaded");
+            }, 1500);
+        });
 
-        if (this.svgGroup) {
-            this.drawTables();
-        } else {
-            console.log("No root group");
-        }
+        loadMap.then(
+            () => {
+                this.svg = d3.select(this.$refs.svg);
+                this.svgGroup = this.svg.select("g");
+                this.tableSVG = d3.select(this.$refs.table);
+
+                if (this.svgGroup) {
+                    this.drawTables();
+                } else {
+                    console.log("No root group");
+                }
+            }
+        );
     }
 };
 </script>
