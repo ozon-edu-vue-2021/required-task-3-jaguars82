@@ -27,14 +27,16 @@
                         v-if="legend.length > 0"
                         class="legend__items"
                     >
-                        <LegendItem
-                            v-for="(item, index) in legend"
-                            :key="index"
-                            :color="item.color"
-                            :text="item.text"
-                            :counter="item.counter"
-                            class="legend__item"
-                        />
+                        <Draggable v-model="legend">
+                            <LegendItem
+                                v-for="(item, index) in legend"
+                                :key="index"
+                                :color="item.color"
+                                :text="item.text"
+                                :counter="item.counter"
+                                class="legend__item"
+                            />
+                        </Draggable>
                     </div>
                     <span
                         v-else
@@ -44,7 +46,7 @@
                     </span>
                 </div>
                 <div class="legend__chart">
-                    <!-- chart -->
+                    <PieChart ref="chart" />
                 </div>
             </div>
             <div
@@ -65,40 +67,85 @@
 </template>
 
 <script>
+import eventBus from "@/eventBus.js";
 import LegendItem from "./SideMenu/LegendItem.vue";
 import PersonCard from "./SideMenu/PersonCard.vue";
+import { Doughnut as PieChart } from "vue-chartjs";
+import Draggable from "vuedraggable";
 import legend from "@/assets/data/legend.json";
+import people from "@/assets/data/people.json";
 
 export default {
-    props: {
-        isUserOpenned: {
-            type: Boolean,
-            default: false,
-        },
-        person: {
-            type: Object,
-            default: null,
-        },
-    },
     components: {
         LegendItem,
         PersonCard,
+        Draggable,
+        PieChart
     },
     data() {
         return {
-            legend: [],
+            legend: legend,
+            isUserOpenned: false,
+            selectedEmployer: null
         };
     },
-    created() {
-        this.loadLegend();
+    computed: {
+        person() {
+            return people.find(person => person.tableId === this.selectedEmployer);
+        }
+    },
+    updated() {
+        if(!this.isUserOpenned) {
+            this.makeChart();
+        }
+    },
+    mounted() {
+        eventBus.$on('select-employer', (payload) => {
+           this.openProfile(payload);
+        });
+        
+        document.addEventListener("click", this.outerClickListener);
+
+        this.makeChart();
+    },
+    beforeDestroy() {
+        eventBus.$off('select-employer');
+        document.removeEventListener("click", this.outerClickListener);
     },
     methods: {
-        loadLegend() {
-            this.legend = legend;
+        openProfile(id) {
+            this.isUserOpenned = true;
+            this.selectedEmployer = id;
         },
         closeProfile() {
-            this.$emit("update:isUserOpenned", false);
+            this.isUserOpenned = false;
+            this.selectedEmployer = null;
         },
+        makeChart() {
+            const chartData = {
+                labels: this.legend.map((item) => item.text),
+                datasets: [
+                    {
+                        label: "Легенда",
+                        backgroundColor: this.legend.map((item) => item.color),
+                        data: this.legend.map((item) => item.counter)
+                    }
+                ]
+            };
+            const chartOptions = {
+                borderWidth: "10px",
+                legend: {
+                    display: false
+                }
+            };
+
+            this.$refs.chart.renderChart(chartData, chartOptions);
+        },
+        outerClickListener(event) {
+            if (this.isUserOpenned && !event.target.closest('.wrapper-table')) {
+                this.closeProfile();
+            }
+        }
     },
 };
 </script>
